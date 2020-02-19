@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BookStoreRazor.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookStoreRazor
 {
@@ -23,27 +24,42 @@ namespace BookStoreRazor
             set;
         }
 
-        public async Task OnGet(int? id)
+        public async Task<IActionResult> OnGet(int? id)
         {
+            //no such book
             if(id==null)
             {
-
+                //create
+                Book = new Book();
+                return Page();
             }
-            Book = await _db.Book.FindAsync(id);
+
+            //update
+            Book = await _db.Book.FirstOrDefaultAsync(b => b.Id == id);
+            if(Book == null)
+            {
+                return NotFound();
+            }
+            return Page();
         }
 
         public async Task<IActionResult> OnPost()
         {
             if (ModelState.IsValid)
             {
-                var BookFromDb = await _db.Book.FindAsync(Book.Id);
-                BookFromDb.Name = Book.Name;
-                BookFromDb.ISBN = Book.ISBN;
-                BookFromDb.Author = Book.Author;
+                if(Book.Id == 0)
+                {
+                    _db.Book.Add(Book);
+                }
+                else
+                {
+                    _db.Book.Update(Book);
+                }
                 await _db.SaveChangesAsync();
 
                 return RedirectToPage("Index");
             }
+
             return RedirectToPage();
         }
     }
